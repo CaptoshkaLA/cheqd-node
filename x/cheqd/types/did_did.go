@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"github.com/cheqd/cheqd-node/x/cheqd/utils"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
@@ -85,13 +86,13 @@ func (did *Did) GetVerificationMethodControllers() []string {
 // Validation
 
 func (did Did) Validate(allowedNamespaces []string) error {
+	did.CheckUniquenessIds()
 	return validation.ValidateStruct(&did,
 		validation.Field(&did.Id, validation.Required, IsDID(allowedNamespaces)),
 		validation.Field(&did.Controller, IsUniqueStrList(), validation.Each(IsDID(allowedNamespaces))),
 		validation.Field(&did.VerificationMethod,
 			IsUniqueVerificationMethodListByIdRule(), validation.Each(ValidVerificationMethodRule(did.Id, allowedNamespaces)),
 		),
-
 		validation.Field(&did.Authentication,
 			IsUniqueStrList(), validation.Each(IsDIDUrl(allowedNamespaces, Empty, Empty, Required), HasPrefix(did.Id)),
 		),
@@ -107,8 +108,26 @@ func (did Did) Validate(allowedNamespaces []string) error {
 		validation.Field(&did.KeyAgreement,
 			IsUniqueStrList(), validation.Each(IsDIDUrl(allowedNamespaces, Empty, Empty, Required), HasPrefix(did.Id)),
 		),
-
 		validation.Field(&did.Service, IsUniqueServiceListByIdRule(), validation.Each(ValidServiceRule(did.Id, allowedNamespaces))),
 		validation.Field(&did.AlsoKnownAs, IsUniqueStrList(), validation.Each(IsURI())),
 	)
+}
+
+func (did Did) CheckUniquenessIds() {
+	var result []string
+
+	// making a list of ids
+	result = append(result, did.Id)
+	result = append(result, did.Controller...)
+	for _, vm := range did.VerificationMethod {
+		result = append(result, vm.GetId())
+	}
+	result = append(result, did.Authentication...)
+
+	fmt.Println(result)
+	// validate it
+	err := validation.Validate(result, IsUniqueStrList())
+	if err != nil {
+		fmt.Println("Found a non-unique id")
+	}
 }

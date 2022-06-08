@@ -217,6 +217,30 @@ func TestDidValidation(t *testing.T) {
 			isValid:  false,
 			errorMsg: "verification_method: there are verification method duplicates.",
 		},
+		{
+			name: "Valid: All Ids unique",
+			struct_: &Did{
+				Id:         ValidTestDID,
+				Controller: []string{ValidTestDID2},
+				VerificationMethod: []*VerificationMethod{
+					{
+						Id:                 fmt.Sprintf("%s#keys-1", ValidTestDID),
+						Type:               "Ed25519VerificationKey2020",
+						Controller:         ValidTestDID,
+						PublicKeyMultibase: ValidEd25519PubKey,
+					},
+					{
+						Id:                 fmt.Sprintf("%s#keys-2", ValidTestDID),
+						Type:               "Ed25519VerificationKey2020",
+						Controller:         ValidTestDID,
+						PublicKeyMultibase: ValidEd25519PubKey,
+					},
+				},
+				Authentication: []string{fmt.Sprintf("%s#keys-3", ValidTestDID)},
+			},
+			isValid:  true,
+			errorMsg: "",
+		},
 	}
 
 	for _, tc := range cases {
